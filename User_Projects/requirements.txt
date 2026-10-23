@@ -1,4 +1,0 @@
-spidev
-matplotlib
-scipy
-gpiod==1.5.4

@@ -119,6 +119,55 @@ https://github.com/pieeg-club/PiEEG-16/blob/main/GUI/2.Graph_Gpio_D%20_1_5_4.py
 
 ---
 
+## Running Headless: Show the GUI on a Mac over SSH
+
+Instead of a monitor on the Pi (step 3), the plot window can be forwarded to a Mac with X11 over SSH. On the Pi, `X11Forwarding yes` must be set in `/etc/ssh/sshd_config` and `xauth` must be installed (both are default on Raspberry Pi OS). The `.venv` needs `tkinter` so matplotlib can use the TkAgg backend.
+
+### 1. Install XQuartz on the Mac
+
+macOS has no built-in X server:
+
+```bash
+brew install --cask xquartz
+```
+
+Log out and back in (or reboot) afterwards so `DISPLAY` is set up.
+
+### 2. Connect with X11 forwarding
+
+Open the XQuartz app, then from the Mac's Terminal:
+
+```bash
+ssh -Y admin@<pi-ip-address>
+```
+
+Check that forwarding works:
+
+```bash
+echo $DISPLAY   # should print something like localhost:10.0
+```
+
+### 3. Run the GUI from that SSH session
+
+```bash
+cd /home/admin/pieeg/PiEEG-16
+.venv/bin/python "GUI/2.Graph_Gpio_D _1_5_4_OS.py"
+```
+
+### Launching from the VS Code terminal
+
+VS Code Remote-SSH does not forward X11 itself. Keep the `ssh -Y` session from step 2 open, note its `$DISPLAY` value, and set it in the VS Code terminal before running the script:
+
+```bash
+export DISPLAY=localhost:10.0   # use the value from the ssh -Y session
+```
+
+Adding `ForwardX11 yes` and `ForwardX11Trusted yes` to the Pi's entry in the Mac's `~/.ssh/config` does not remove the need to set `DISPLAY` in VS Code's terminal.
+
+> **Note:** Forwarded X11 sends every redraw over the network, so the plot will update more slowly than on a local monitor, especially over Wi-Fi. The script reads SPI and redraws in the same loop, so slow redraws may cause dropped samples or missed data-ready events. Do not assume recordings made this way match a local run. If the lag is bad, use VNC instead (`sudo raspi-config` → Interface Options → VNC, then RealVNC Viewer on the Mac).
+
+---
+
 ## Repository Notes
 
 - The `.venv/` virtual environment folder is excluded from git (`.gitignore`) — it must be recreated on each device as above.
